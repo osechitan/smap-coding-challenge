@@ -13,7 +13,7 @@ class User(models.Model):
     tariff = models.CharField(verbose_name='tariff', max_length=2)
 
     def __str__(self):
-        return self.id
+        return f'{self.id}'
 
 
 class Consumption(models.Model):
@@ -28,4 +28,4 @@ class Consumption(models.Model):
     consumption = models.FloatField(verbose_name='consumption')
 
     def __str__(self):
-        return self.id
+        return f'{self.id}'
