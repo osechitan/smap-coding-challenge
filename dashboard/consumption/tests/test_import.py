@@ -15,7 +15,6 @@ class TestImport(TestCase):
                                       '/data/consumption'
 
     def test_command(self):
-        print(self.USER_FILE_DIR)
         out = StringIO()
         call_command('import',
                      self.USER_FILE_DIR,
@@ -46,3 +45,28 @@ class TestImport(TestCase):
                      stderr=StringIO())
         self.assertEqual(User.objects.all().count(), 2)
         self.assertEqual(Consumption.objects.all().count(), 0)
+
+    def test_duplicate_user(self):
+        out = StringIO()
+
+        user1 = User.objects.create(id=1, area='AA', tariff='BB')
+        user2 = User.objects.create(id=2, area='CC', tariff='DD')
+
+        call_command('import',
+                     self.USER_FILE_DIR,
+                     self.CONSUMPTION_FOLDER_DIR,
+                     stdout=out,
+                     stderr=StringIO())
+
+        # check unupdated user data
+        new_user = User.objects.all().order_by('id')
+        self.assertEqual(new_user.count(), 2)
+        self.assertEqual(new_user[0].id, user1.id)
+        self.assertEqual(new_user[0].area, user1.area)
+        self.assertEqual(new_user[0].tariff, user1.tariff)
+
+        self.assertEqual(new_user[1].id, user2.id)
+        self.assertEqual(new_user[1].area, user2.area)
+        self.assertEqual(new_user[1].tariff, user2.tariff)
+
+        self.assertEqual(Consumption.objects.all().count(), 9)

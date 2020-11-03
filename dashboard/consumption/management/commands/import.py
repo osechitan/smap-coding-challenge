@@ -8,7 +8,6 @@ from consumption.models import User, Consumption
 
 
 class Command(BaseCommand):
-    test = 'にゃんぱす'
     help = 'import data'
 
     def add_arguments(self, parser):
@@ -47,9 +46,12 @@ class Command(BaseCommand):
                 user = User(id=row[0], area=row[1], tariff=row[2])
                 users.append(user)
 
-            User.objects.bulk_create(users)
+            # insert user data
+            User.objects.bulk_create(users, ignore_conflicts=True)
 
     def import_consumption_data(self, folder_path):
+        consumption_list = []
+
         for user in User.objects.all():
             try:
                 file = open(f'{folder_path}/{user.id}.csv', newline='\n')
@@ -62,19 +64,19 @@ class Command(BaseCommand):
             # skip header
             header = next(reader)
 
-            consumptions = []
             sys.stdout.write(f'\rImporting {user.id}.csv...')
             sys.stdout.flush()
 
-            # read rows and insert consumption data
+            # read rows and add list
             for row in reader:
                 aware_time = make_aware(dt.strptime(row[0],
                                         '%Y-%m-%d %H:%M:%S'))
                 consumption = Consumption(user=user,
                                           datetime=aware_time,
                                           consumption=row[1])
-                consumptions.append(consumption)
+                consumption_list.append(consumption)
 
-            Consumption.objects.bulk_create(consumptions)
+        # insert consumption data
+        Consumption.objects.bulk_create(consumption_list)
 
         sys.stdout.write('\nComplete!\n')
