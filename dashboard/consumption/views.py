@@ -2,7 +2,6 @@
 from __future__ import unicode_literals
 
 import io
-from PIL import Image
 import matplotlib.pyplot as plt
 import numpy as np
 from matplotlib.ticker import ScalarFormatter
@@ -20,10 +19,10 @@ class SummaryView(generic.ListView):
     paginate_by = 20
     template_name = 'consumption/summary.html'
 
-    def get_context_data(self, *args, **kwargs): 
+    def get_context_data(self, *args, **kwargs):
         context = super().get_context_data(**kwargs)
         context.update({
-            'consumption_count': Consumption.objects.count()
+            'consumption_count': get_consumption_count()
         })
         return context
 
@@ -32,32 +31,39 @@ class DetailView(generic.DetailView):
     model = User
     template_name = 'consumption/detail.html'
 
-    def get_context_data(self, *args, **kwargs): 
+    def get_context_data(self, *args, **kwargs):
         context = super().get_context_data(**kwargs)
         user_id = self.kwargs.get('pk', '')
         context.update({
-            'consumption_count': Consumption.objects.select_related('user')
-                                                    .filter(user_id=user_id)
-                                                    .count()
+            # get count of consumption data
+            'consumption_count': get_consumption_count(user_id)
         })
         return context
 
 
-def get_svg_summary(request):
-    setPlt()
-    svg = pltTosvg()
+def get_consumption_count(user_id=None):
+    count = 0
+    if user_id is None:
+        count = Consumption.objects.count()
+    else:
+        count = Consumption.objects.select_related('user')\
+                                   .filter(user_id=user_id)\
+                                   .count()
+    return count
+
+
+def get_svg_summary(request, pk=None):
+    __setPlt(pk)
+    svg = __pltTosvg()
     plt.cla()
     response = HttpResponse(svg, content_type='image/svg+xml')
     return response
 
 
-def setPlt():
-    consumption = Consumption.objects.annotate(month=TruncMonth('datetime'))\
-                                     .values('month')\
-                                     .annotate(consumption=Sum('consumption'))\
-                                     .order_by('month')
-    x = np.array([data['month'] for data in consumption])
-    y = np.array([data['consumption'] for data in consumption])
+def __setPlt(pk):
+    consumption_list = __get_consumption(pk)
+    x = np.array([data['month'] for data in consumption_list])
+    y = np.array([data['consumption'] for data in consumption_list])
     plt.plot(x, y, color='#00d5ff')
     plt.gca().yaxis.set_major_formatter(ScalarFormatter(useMathText=True))
     plt.title('Total amount of consumption', color='#3407ba')
@@ -65,7 +71,7 @@ def setPlt():
     plt.ylabel('amount')
 
 
-def pltTosvg():
+def __pltTosvg():
     buf = io.BytesIO()
     plt.savefig(buf, format='svg', bbox_inches='tight')
     s = buf.getvalue()
@@ -73,25 +79,18 @@ def pltTosvg():
     return s
 
 
-def get_svg_summary_detail(request, pk):
-    setPlt_detail(pk)
-    svg = pltTosvg()
-    plt.cla()
-    response = HttpResponse(svg, content_type='image/svg+xml')
-    return response
-
-
-def setPlt_detail(pk):
-    consumption = Consumption.objects.select_related('user')\
-                                     .filter(user_id=pk)\
-                                     .annotate(month=TruncMonth('datetime'))\
-                                     .values('month')\
-                                     .annotate(consumption=Sum('consumption'))\
-                                     .order_by('month')
-    x = np.array([data['month'] for data in consumption])
-    y = np.array([data['consumption'] for data in consumption])
-    plt.plot(x, y, color='#00d5ff')
-    plt.gca().yaxis.set_major_formatter(ScalarFormatter(useMathText=True))
-    plt.title('Total amount of consumption', color='#3407ba')
-    plt.xlabel('month')
-    plt.ylabel('amount')
+def __get_consumption(pk=None):
+    consumption_list = []
+    if pk is None:
+        consumption_list = Consumption.objects.annotate(month=TruncMonth('datetime'))\
+                                              .values('month')\
+                                              .annotate(consumption=Sum('consumption'))\
+                                              .order_by('month')
+    else:
+        consumption_list = Consumption.objects.select_related('user')\
+                                              .filter(user_id=pk)\
+                                              .annotate(month=TruncMonth('datetime'))\
+                                              .values('month')\
+                                              .annotate(consumption=Sum('consumption'))\
+                                              .order_by('month')
+    return consumption_list

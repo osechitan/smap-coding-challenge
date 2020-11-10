@@ -6,5 +6,5 @@ djangorestframework==3.9.1
 django-webpack-loader==0.6.0
 matplotlib==3.3.2
 numpy==1.19.4
-bootstrap4==1.1.1
+bootstrap4==0.1.0
 factory_boy==2.12.0
