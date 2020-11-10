@@ -32,6 +32,16 @@ class DetailView(generic.DetailView):
     model = User
     template_name = 'consumption/detail.html'
 
+    def get_context_data(self, *args, **kwargs): 
+        context = super().get_context_data(**kwargs)
+        user_id = self.kwargs.get('pk', '')
+        context.update({
+            'consumption_count': Consumption.objects.select_related('user')
+                                                    .filter(user_id=user_id)
+                                                    .count()
+        })
+        return context
+
 
 def get_svg_summary(request):
     setPlt()
@@ -43,9 +53,9 @@ def get_svg_summary(request):
 
 def setPlt():
     consumption = Consumption.objects.annotate(month=TruncMonth('datetime'))\
-                                               .values('month')\
-                                               .annotate(consumption=Sum('consumption'))\
-                                               .order_by('month')
+                                     .values('month')\
+                                     .annotate(consumption=Sum('consumption'))\
+                                     .order_by('month')
     x = np.array([data['month'] for data in consumption])
     y = np.array([data['consumption'] for data in consumption])
     plt.plot(x, y, color='#00d5ff')
@@ -61,3 +71,27 @@ def pltTosvg():
     s = buf.getvalue()
     buf.close()
     return s
+
+
+def get_svg_summary_detail(request, pk):
+    setPlt_detail(pk)
+    svg = pltTosvg()
+    plt.cla()
+    response = HttpResponse(svg, content_type='image/svg+xml')
+    return response
+
+
+def setPlt_detail(pk):
+    consumption = Consumption.objects.select_related('user')\
+                                     .filter(user_id=pk)\
+                                     .annotate(month=TruncMonth('datetime'))\
+                                     .values('month')\
+                                     .annotate(consumption=Sum('consumption'))\
+                                     .order_by('month')
+    x = np.array([data['month'] for data in consumption])
+    y = np.array([data['consumption'] for data in consumption])
+    plt.plot(x, y, color='#00d5ff')
+    plt.gca().yaxis.set_major_formatter(ScalarFormatter(useMathText=True))
+    plt.title('Total amount of consumption', color='#3407ba')
+    plt.xlabel('month')
+    plt.ylabel('amount')

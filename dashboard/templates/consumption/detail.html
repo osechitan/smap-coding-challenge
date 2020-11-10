@@ -1,7 +1,50 @@
 {% extends 'consumption/layout.html' %}
-
+{% load static %}
+{% block pate_title %}Detail{% endblock %}
 {% block content %}
+<div class="text-center mx-auto pb-5 w-50">
+    <h2>Detail</h2>
+    <hr />
 
-<h1>Hello Especially</h1>
+    {% if consumption_count > 0 %}
+        <!-- loading image -->
+        <div id="loading" class="w-50 h-50"><img src="{% static 'images/loading.gif' %}"></div>
 
+        <!-- Summary graph -->
+        <div id="summarygraph">
+            <img src="{% url 'consumption:detail_plot' object.pk %}" class="my-1" alt="Summary">
+        </div>
+    {% else %}
+        <h1>No consumption data</h1>
+    {% endif %}
+
+    <table class="table table-bordered">
+        <caption style="caption-side: top;">User Info.</caption>
+        <thead class="thead-light">
+            <tr>
+                <th>user</th>
+                <th>area</th>
+                <th>tariff</th>
+            </tr>
+        </thead>
+        <tr>
+            <td>{{ user.id }}</td>
+            <td>{{ user.area }}</td>
+            <td>{{ user.tariff }}</td>
+        </tr>
+    </table>
+
+    <div class="my-3">
+        <a href="{% url 'consumption:summary' %}">back to summary</a>
+    </div>
+</div>
+
+{% endblock %}
+{% block extra_js %}
+<script>
+    //ロード中画像の切り替え
+    window.onload = function (){
+        changeImage();
+    }
+</script>
 {% endblock %}

@@ -2,6 +2,7 @@ from django.utils import timezone
 from django.test import TestCase, Client
 from django.urls import reverse
 from ..models import User, Consumption
+from .factory import UserFactory
 
 
 class TestSummaryView(TestCase):
@@ -10,16 +11,11 @@ class TestSummaryView(TestCase):
     def setUp(self):
         # create user and consumption data
         super().setUp()
-        self.user1 = User.objects.create(id=1, area='a1', tariff='t1')
-        self.user2 = User.objects.create(id=2, area='a2', tariff='t2')
-        self.consumption = Consumption.objects.create(id=1,
-                                                      user=self.user1,
-                                                      datetime=timezone.now(),
-                                                      consumption=10.0)
-        self.consumption = Consumption.objects.create(id=2,
-                                                      user=self.user2,
-                                                      datetime=timezone.now(),
-                                                      consumption=20.0)
+        self.user1 = UserFactory()
+        self.user2 = UserFactory(id=2,
+                                 area='a2',
+                                 tariff="t2",
+                                 consumption__consumption=20.0)
 
     def test_get_user(self):
         response = self.client.get(reverse('consumption:summary'))
@@ -40,3 +36,35 @@ class TestSummaryView(TestCase):
         response = self.client.get(reverse('consumption:summary'))
         self.assertEqual(response.status_code, 200)
         self.assertEquals(len(response.context['user_list']), 0)
+
+
+class TestDetailView(TestCase):
+    """Test DetailView"""
+
+    def setUp(self):
+        # create user and consumption data
+        super().setUp()
+        self.user1 = UserFactory()
+        self.user2 = UserFactory(id=2,
+                                 area='a2',
+                                 tariff="t2",
+                                 consumption__consumption=20.0)
+
+    def test_get_detail(self):
+        response = self.client.get(reverse('consumption:detail',
+                                           kwargs={'pk': self.user1.id}))
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.context['object'].id, 1)
+        self.assertEqual(response.context['object'].area, 'a1')
+        self.assertEqual(response.context['object'].tariff, 't1')
+
+    def test_get_queryset(self):
+        response = self.client.get(reverse('consumption:detail',
+                                           kwargs={'pk': self.user1.id}))
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.context['consumption_count'], 1)
+
+    def test_empty_user_data(self):
+        response = self.client.get(reverse('consumption:detail',
+                                           kwargs={'pk': 100}))
+        self.assertEqual(response.status_code, 404)
