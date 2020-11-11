@@ -30,7 +30,7 @@ class TestSummaryView(TestCase):
 
     def test_no_user_data(self):
         User.objects.all().delete()
-        # check the number of user
+        # check count of user
         self.assertEqual(User.objects.all().count(), 0)
 
         response = self.client.get(reverse('consumption:summary'))
@@ -68,3 +68,25 @@ class TestDetailView(TestCase):
         response = self.client.get(reverse('consumption:detail',
                                            kwargs={'pk': 100}))
         self.assertEqual(response.status_code, 404)
+
+
+class TestGetSvgSummaryView(TestCase):
+    def setUp(self):
+        # create user and consumption data
+        super().setUp()
+        self.user1 = UserFactory()
+        self.user2 = UserFactory(id=2,
+                                 area='a2',
+                                 tariff="t2",
+                                 consumption__consumption=20.0)
+
+    def test_get_svg(self):
+        response = self.client.get(reverse('consumption:summary_plot'))
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response['content-type'], 'image/svg+xml')
+
+    def test_get_svg_with_id(self):
+        response = self.client.get(reverse('consumption:detail_plot',
+                                           kwargs={'pk': self.user1.id}))
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response['content-type'], 'image/svg+xml')
