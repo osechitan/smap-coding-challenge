@@ -1,0 +1,14 @@
+version: '3'
+
+services:
+  web:
+    stdin_open: true
+    restart: always
+    environment: 
+      TZ: Asia/Tokyo
+    build:
+      context: .
+    volumes:
+      - .:/usr/src
+    ports:
+      - 8000:8000
