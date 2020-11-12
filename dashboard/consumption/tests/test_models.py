@@ -46,8 +46,8 @@ class TestConsumptionModel(TestCase):
     """Test ConsumptionModel"""
 
     def setUp(self):
-        # create user data
         super().setUp()
+        # create user data
         self.user = User.objects.create(id=1, area='a1', tariff='t1')
 
     def test_empty_user_data(self):
