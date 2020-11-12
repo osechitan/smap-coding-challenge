@@ -22,6 +22,7 @@ class SummaryView(generic.ListView):
     def get_context_data(self, *args, **kwargs):
         context = super().get_context_data(**kwargs)
         context.update({
+            # get count of consumption data
             'consumption_count': get_consumption_count()
         })
         return context
