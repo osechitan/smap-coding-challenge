@@ -7,7 +7,7 @@
     <h1>Summary of Consumption</h1>
     <hr />
     {% if consumption_count > 0 %}
-        <!-- loading image -->
+        <!-- Loading image -->
         <div id="loading" class="w-50 h-50"><img src="{% static 'images/loading.gif' %}"></div>
 
         <!-- Summary graph -->
@@ -42,7 +42,7 @@
     </div>
     <nav aria-label="Page navigation">
         <ul class="pagination justify-content-center pagination-lg g-mt-28 g-mb-28">
-            <!-- 前へ -->
+            <!-- Previous -->
             {% if page_obj.has_previous %}
                 <li class="page-item">
                     <a class="page-link" href="?page={{ page_obj.previous_page_number }}">
@@ -50,7 +50,7 @@
                     </a>
                 </li>
             {% endif %}
-            <!-- 数字 -->
+            <!-- Number -->
             {% for num in page_obj.paginator.page_range %}
                 {% if num <= page_obj.number|add:5 and num >= page_obj.number|add:-5 %}
 
@@ -61,7 +61,7 @@
                     {% endif %}
                 {% endif %}
             {% endfor %}
-            <!-- 次へ -->
+            <!-- Next -->
             {% if page_obj.has_next %}
                 <li class="page-item">
                     <a class="page-link" href="?page={{ page_obj.next_page_number }}">
@@ -78,7 +78,7 @@
 {% endblock %}
 {% block extra_js %}
 <script>
-    //ロード中画像の切り替え
+    //change image after loading
     window.onload = function (){
         changeImage();
     }

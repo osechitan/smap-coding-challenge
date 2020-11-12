@@ -7,7 +7,7 @@
     <hr />
 
     {% if consumption_count > 0 %}
-        <!-- loading image -->
+        <!-- Loading image -->
         <div id="loading" class="w-50 h-50"><img src="{% static 'images/loading.gif' %}"></div>
 
         <!-- Summary graph -->
@@ -42,7 +42,7 @@
 {% endblock %}
 {% block extra_js %}
 <script>
-    //ロード中画像の切り替え
+    //change image after loading
     window.onload = function (){
         changeImage();
     }
