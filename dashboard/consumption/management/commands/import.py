@@ -1,10 +1,10 @@
-import csv
 import sys
 from datetime import datetime as dt
 from django.utils.timezone import make_aware
 from django.core.management.base import BaseCommand
 from dashboard import settings
 from consumption.models import User, Consumption
+import pandas as pd
 
 
 class Command(BaseCommand):
@@ -28,55 +28,50 @@ class Command(BaseCommand):
 
     def import_user_data(self, file_path):
         try:
-            file = open(file_path, newline='\n')
+            sys.stdout.write(f'Start importing user data...')
+            chunked_df = pd.read_csv(file_path, header=0, chunksize=100)
+            df = pd.concat((r for r in chunked_df), ignore_index=True)
 
         except IOError:
             sys.stdout.write(f'File does not exist : {file_path}\n')
             sys.exit(1)
 
         else:
-            reader = csv.reader(file)
-            # skip header
-            header = next(reader)
-
             users = []
-
+            
             # read rows and insert user data
-            for row in reader:
-                user = User(id=row[0], area=row[1], tariff=row[2])
+            for row in df.itertuples():
+                user = User(id=row[1], area=row[2], tariff=row[3])
                 users.append(user)
-
-            # insert user data
             User.objects.bulk_create(users, ignore_conflicts=True)
+            sys.stdout.write('\nComplete importing user data!\n')
 
     def import_consumption_data(self, folder_path):
         consumption_list = []
-
+        sys.stdout.write(f'Start importing consumption data...\n')
         for user in User.objects.all():
             try:
-                file = open(f'{folder_path}/{user.id}.csv', newline='\n')
+                chunked_df = pd.read_csv(f'{folder_path}/{user.id}.csv', header=0, chunksize=100)
+                df = pd.concat((r for r in chunked_df), ignore_index=True)
+
             except IOError:
                 sys.stdout.write('File does not exist or cannot open : '
                                  f'{user.id}.csv\n')
                 continue
 
-            reader = csv.reader(file)
-            # skip header
-            header = next(reader)
-
             sys.stdout.write(f'\rImporting {user.id}.csv...')
             sys.stdout.flush()
 
             # read rows and add list
-            for row in reader:
-                aware_time = make_aware(dt.strptime(row[0],
+            for row in df.itertuples():
+                aware_time = make_aware(dt.strptime(row[1],
                                         '%Y-%m-%d %H:%M:%S'))
                 consumption = Consumption(user=user,
                                           datetime=aware_time,
-                                          consumption=row[1])
+                                          consumption=row[2])
                 consumption_list.append(consumption)
 
         # insert consumption data
-        Consumption.objects.bulk_create(consumption_list)
+        Consumption.objects.bulk_create(consumption_list, ignore_conflicts=True)
 
         sys.stdout.write('\nComplete!\n')
